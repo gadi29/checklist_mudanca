@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contagem Regressiva Mudança</title>
+    
+    <!-- Carregar Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Carregar React e ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Carregar Babel para traduzir o JSX no navegador -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- Ícones (Convertidos para SVG inline para não depender de bibliotecas externas) ---
+        const CalendarIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+        );
+        const CheckIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><polyline points="20 6 9 17 4 12"/></svg>
+        );
+        const TruckIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
+        );
+        const HomeIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 animate-bounce"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        );
+        const PartyPopperIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 animate-bounce"><path d="M5.8 11.3 2 22l10.7-3.79"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12v0c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10"/><path d="m22 13-.82-.33c-.86-.34-1.82.2-2.08 1.15v0c-.27.98-1.45 1.63-2.45 1.63h-.38c-.93 0-1.71.65-1.97 1.57L14 17c-.42 1.61-2.1 2.38-3.5 1.61l-.22-.12a2 2 0 0 1-.84-2.67l.05-.09a2 2 0 0 1 2.65-.9L13 15"/></svg>
+        );
+        const Trash2Icon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+        );
+
+        // --- Componente Principal ---
+        function App() {
+            // Configurações de Data
+            const targetDate = new Date(2026, 1, 23); // 23 Fev 2026
+            const startDate = new Date(2025, 11, 2);  // 02 Dez 2025
+
+            const [checkedDates, setCheckedDates] = useState(() => {
+                const saved = localStorage.getItem('moveChecklist');
+                return saved ? JSON.parse(saved) : [];
+            });
+
+            useEffect(() => {
+                localStorage.setItem('moveChecklist', JSON.stringify(checkedDates));
+            }, [checkedDates]);
+
+            const formatDate = (date) => {
+                return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+            };
+
+            const formatFullDate = (date) => {
+                return date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
+            };
+
+            const generateDaysArray = () => {
+                const days = [];
+                let currentDate = new Date(startDate);
+                while (currentDate <= targetDate) {
+                    days.push(new Date(currentDate));
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+                return days;
+            };
+
+            const allDays = generateDaysArray();
+            const totalDays = allDays.length;
+            const daysCompleted = checkedDates.length;
+            
+            const calculateRealTimeRemaining = () => {
+                const now = new Date();
+                now.setHours(0,0,0,0);
+                const target = new Date(targetDate);
+                const diffTime = target - now;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                return diffDays > 0 ? diffDays : 0;
+            };
+
+            const realDaysRemaining = calculateRealTimeRemaining();
+
+            const toggleDate = (dateStr) => {
+                if (checkedDates.includes(dateStr)) {
+                    setCheckedDates(checkedDates.filter(d => d !== dateStr));
+                } else {
+                    setCheckedDates([...checkedDates, dateStr]);
+                }
+            };
+
+            const getProgressPercentage = () => {
+                return Math.round((daysCompleted / totalDays) * 100);
+            };
+
+            const handleReset = () => {
+                if (confirm("Tem certeza que deseja desmarcar todos os dias?")) {
+                    setCheckedDates([]);
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-slate-50 text-slate-800 font-sans pb-10">
+                    {/* Header */}
+                    <div className="bg-blue-600 text-white shadow-lg sticky top-0 z-10">
+                        <div className="max-w-3xl mx-auto px-4 py-6">
+                            <div className="flex justify-between items-center mb-4">
+                                <h1 className="text-2xl font-bold flex items-center gap-2">
+                                    <TruckIcon />
+                                    Rumo à Casa Nova
+                                </h1>
+                                <button 
+                                    onClick={handleReset}
+                                    className="text-xs text-blue-200 hover:text-white flex items-center gap-1 bg-blue-700 px-3 py-1 rounded-full transition-colors"
+                                >
+                                    <Trash2Icon /> Resetar
+                                </button>
+                            </div>
+
+                            <div className="flex flex-col md:flex-row gap-6 justify-between items-center bg-blue-700/50 p-4 rounded-xl border border-blue-500/30">
+                                <div className="text-center md:text-left">
+                                    <p className="text-blue-200 text-sm font-medium uppercase tracking-wider">Data da Mudança</p>
+                                    <p className="text-xl font-bold">{formatFullDate(targetDate)}</p>
+                                </div>
+                                
+                                <div className="text-center">
+                                    <p className="text-4xl font-black">{realDaysRemaining}</p>
+                                    <p className="text-blue-200 text-sm">Dias Restantes</p>
+                                </div>
+                            </div>
+
+                            {/* Barra de Progresso */}
+                            <div className="mt-6">
+                                <div className="flex justify-between text-xs mb-1 text-blue-100">
+                                    <span>Jornada Percorrida</span>
+                                    <span>{getProgressPercentage()}%</span>
+                                </div>
+                                <div className="w-full bg-blue-900/40 rounded-full h-3 overflow-hidden">
+                                    <div 
+                                        className="bg-green-400 h-3 rounded-full transition-all duration-500 ease-out" 
+                                        style={{ width: `${getProgressPercentage()}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Grid de Dias */}
+                    <main className="max-w-3xl mx-auto px-4 py-8">
+                        <div className="flex items-center gap-2 mb-6 text-slate-500">
+                            <CalendarIcon />
+                            <h2 className="font-semibold">Seu Checklist Diário</h2>
+                        </div>
+
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                            {allDays.map((date, index) => {
+                                const dateStr = date.toISOString().split('T')[0];
+                                const isChecked = checkedDates.includes(dateStr);
+                                const isTarget = date.getTime() === targetDate.getTime();
+                                const isToday = new Date().toDateString() === date.toDateString();
+                                
+                                if (isTarget) {
+                                    return (
+                                        <div 
+                                            key={dateStr}
+                                            className={`
+                                                col-span-3 sm:col-span-4 md:col-span-6 
+                                                bg-gradient-to-r from-blue-600 to-indigo-600 text-white
+                                                p-6 rounded-xl shadow-lg flex items-center justify-center gap-4
+                                                mt-4 transform hover:scale-105 transition-transform duration-300
+                                            `}
+                                        >
+                                            <HomeIcon />
+                                            <div className="text-center">
+                                                <p className="font-bold text-2xl">Dia da Mudança!</p>
+                                                <p className="opacity-90">{formatDate(date)}</p>
+                                            </div>
+                                            <PartyPopperIcon />
+                                        </div>
+                                    );
+                                }
+
+                                return (
+                                    <button
+                                        key={dateStr}
+                                        onClick={() => toggleDate(dateStr)}
+                                        className={`
+                                            relative p-3 rounded-lg border-2 flex flex-col items-center justify-center gap-2
+                                            transition-all duration-200 h-24
+                                            ${isChecked 
+                                                ? 'bg-green-50 border-green-500 text-green-700 shadow-sm' 
+                                                : 'bg-white border-slate-200 text-slate-600 hover:border-blue-400 hover:shadow-md'
+                                            }
+                                            ${isToday && !isChecked ? 'ring-2 ring-blue-400 ring-offset-2' : ''}
+                                        `}
+                                    >
+                                        {isToday && !isChecked && (
+                                            <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow-sm">
+                                                Hoje
+                                            </span>
+                                        )}
+                                        
+                                        <span className="text-sm font-medium">{formatDate(date)}</span>
+                                        
+                                        <div className={`
+                                            w-8 h-8 rounded-full flex items-center justify-center transition-colors
+                                            ${isChecked ? 'bg-green-500 text-white' : 'bg-slate-100 text-slate-300'}
+                                        `}>
+                                            {isChecked ? <CheckIcon /> : <div className="w-2 h-2 rounded-full bg-slate-300" />}
+                                        </div>
+
+                                        {isChecked && (
+                                            <span className="text-[10px] font-bold text-green-600 uppercase tracking-widest">
+                                                Vencido
+                                            </span>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
